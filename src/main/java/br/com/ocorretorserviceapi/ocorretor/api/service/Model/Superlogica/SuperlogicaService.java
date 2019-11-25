@@ -1,16 +1,17 @@
 package br.com.ocorretorserviceapi.ocorretor.api.service.Model.Superlogica;
 
 import br.com.ocorretorserviceapi.ocorretor.api.service.Model.Usuario.Cliente;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.client.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
+import javax.ws.rs.core.*;
 import java.util.ArrayList;
 
 public class SuperlogicaService {
+    private MultivaluedMap headers;
+
     //https://www.baeldung.com/jersey-jax-rs-client
     private Client client;
 
@@ -19,39 +20,52 @@ public class SuperlogicaService {
     private static final String URL  = "https://api.superlogica.net/v2/financeiro/";
 
     private static final String URI_CLIENTE = "clientes?apenasColunasPrincipais=0&status=2&comDiaDeVencimento=0&apenasPessoasJuridicas=0&pagina=1&itensPorPagina=50&comDadosDoGrupo=1";
+    private static final String URI_CLIENTE_ID = "clientes?id=16027";
 
     private static final String APP_TOKEN = "Zq5baiPoqzjh";
-
     private static final String ACCESS_TOKEN = "tf8nfifh4l6a";
+    private static final String CONTENT_TYPE = "application/x-www-form-urlencoded";
 
-    public ArrayList<Cliente> listarClientesSuperlogica() throws JSONException {
-        client = ClientBuilder.newClient();
-        WebTarget webTarget = client.target(URL);
+    public Response listarClientesSuperlogica() {
 
-        WebTarget employeeWebTarget = webTarget.path(URI_CLIENTE);
-        Invocation.Builder invocationBuilder = employeeWebTarget.request(MediaType.APPLICATION_FORM_URLENCODED);
+        Client client = ClientBuilder.newClient();
+        WebTarget webTarget = client.target(URL).path(URI_CLIENTE);
 
-        Cliente cliente = new Cliente();
-        Response response = invocationBuilder.post(Entity.entity(toString(), MediaType.APPLICATION_FORM_URLENCODED));
+        Invocation.Builder invocationBuilder = webTarget.request();
+        invocationBuilder.headers(this.getRequestHeaders());
 
-        System.out.println("toString - " + response);
+        Response result = invocationBuilder.get();
 
-        this.clientes = new ArrayList<Cliente>();
+        if (200 == result.getStatus()) {
+            System.out.println("result - " + result.getMetadata());
+        }
 
-        return  clientes;
+        return result;
     }
 
-    @Override
-    public String toString() {
-        return "{\"app_token\": \"Zq5baiPoqzjh\", \"access_token\":\"tf8nfifh4l6a\"}";
+    private MultivaluedMap getRequestHeaders() {
+        this.headers = new MultivaluedHashMap();
+
+        this.headers.add("Content-Type", CONTENT_TYPE);
+        this.headers.add("app_token", APP_TOKEN);
+        this.headers.add("access_token", ACCESS_TOKEN);
+
+        return this.headers;
     }
 
-    public Cliente buscarClienteSuperlogica(int id) {
-        return client
-                .target(URL)
-                .path(URI_CLIENTE)
-                .request(MediaType.APPLICATION_FORM_URLENCODED)
-                .get(Cliente.class);
+    public Response buscarClienteSuperlogica(int id) {
+        Client client = ClientBuilder.newClient();
+        WebTarget webTarget = client.target(URL).path(URI_CLIENTE_ID);
+        Invocation.Builder invocationBuilder =  webTarget.request().headers(this.getRequestHeaders());
+        Response response = invocationBuilder.get();
+
+        int status = response.getStatus();
+
+        System.out.println("status - " + status);
+        System.out.println("response - " + response);
+        System.out.println("textEntity - " + response.getEntity());
+
+        return response;
     }
 
     public Response createJsonEmployee(Cliente emp) {
